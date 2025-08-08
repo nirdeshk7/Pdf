@@ -1,13 +1,4 @@
-fastapi
-uvicorn
-pydantic
-python-multipart
-pdf2image
-pytesseract
-PyMuPDF
-reportlab
+Flask
+PyPDF2
 Pillow
-python-docx
-openpyxl
-moviepy
-pandas
+gunicorn

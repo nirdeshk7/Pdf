@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ultaPDF - Merge Files</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .dropzone {
+            width: 80%; margin: auto; padding: 50px; border: 2px dashed #ccc;
+            border-radius: 10px; cursor: pointer; background-color: #f9f9f9;
+        }
+        .dropzone.hover { background-color: #e6e6e6; }
+        .file-list { margin-top: 20px; }
+        button { margin-top: 20px; padding: 10px 25px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>ultaPDF - Merge up to 500 Files (PDF, Word, Excel, Images)</h1>
+    <div class="dropzone" id="dropzone">
+        Drag & Drop Files Here or Click to Upload (Max 500)
+    </div>
+    <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" style="display:none;" />
+    <div class="file-list" id="fileList"></div>
+    <button id="mergeBtn" disabled>Merge Files</button>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const mergeBtn = document.getElementById('mergeBtn');
+        let filesToUpload = [];
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('hover'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('hover'));
+        dropzone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropzone.classList.remove('hover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+        function handleFiles(files) {
+            for (let file of files) {
+                if (filesToUpload.length >= 500) break;
+                if (['pdf','doc','docx','xls','xlsx','ppt','pptx','jpg','jpeg','png'].some(ext => file.name.toLowerCase().endsWith(ext))) {
+                    filesToUpload.push(file);
+                    const div = document.createElement('div');
+                    div.textContent = file.name;
+                    fileList.appendChild(div);
+                }
+            }
+            mergeBtn.disabled = filesToUpload.length === 0;
+        }
+
+        mergeBtn.addEventListener('click', () => {
+            const formData = new FormData();
+            filesToUpload.forEach(f => formData.append('files', f));
+
+            mergeBtn.disabled = true;
+
+            fetch('/merge', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Merge failed');
+                return res.blob();
+            })
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = "merged.pdf";
+                link.click();
+                mergeBtn.disabled = false;
+            })
+            .catch(err => {
+                alert(err.message);
+                mergeBtn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
